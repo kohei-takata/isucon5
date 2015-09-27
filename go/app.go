@@ -339,7 +339,7 @@ LIMIT 10`, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
-	var friendsIdSlice int[]
+	var friendsIdSlice []int
 	friendsMap := make(map[int]time.Time)
 	for rows.Next() {
 		var id, one, another int
@@ -359,13 +359,13 @@ LIMIT 10`, user.ID)
 	friends := make([]Friend, 0, len(friendsMap))
 	for key, val := range friendsMap {
 		friends = append(friends, Friend{key, val})
-		friendsIdSlice = append(key)
+		friendsIdSlice = append(friendsIdSlice, key)
 	}
 	rows.Close()
 
 	var friendIds string
-	for key,friendId := range friendsIdSlice {
-		friendIds = friendIds + friendId
+	for _,friendId := range friendsIdSlice {
+		friendIds = friendIds + strconv.Itoa(friendId)
 	}
 
 	rows, err = db.Query(`SELECT * FROM entries where user_id in (?) ORDER BY created_at DESC limit 10`, friendIds)
