@@ -335,7 +335,8 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM entries ORDER BY created_at DESC LIMIT 10`)
+	rows, err = db.Query(`select * from (SELECT * FROM entries ORDER BY created_at DESC limit 1000) as test inner join relations re1 on test.user_id = re1.one inner join relations 
+re2 on test.user_id = re2.another limit 10;`)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -345,17 +346,12 @@ LIMIT 10`, user.ID)
 		var body string
 		var createdAt time.Time
 		checkErr(rows.Scan(&id, &userID, &private, &body, &createdAt))
-		if !isFriend(w, r, userID) {
-			continue
-		}
 		entriesOfFriends = append(entriesOfFriends, Entry{id, userID, private == 1, strings.SplitN(body, "\n", 2)[0], strings.SplitN(body, "\n", 2)[1], createdAt})
-		if len(entriesOfFriends) >= 10 {
-			break
-		}
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 10`)
+	rows, err = db.Query(`select * from (SELECT * FROM comments ORDER BY created_at DESC limit 1000) as test inner join relations re1 on test.user_id = re1.one inner join relations 
+re2 on test.user_id = re2.another limit 10;`)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -363,9 +359,6 @@ LIMIT 10`, user.ID)
 	for rows.Next() {
 		c := Comment{}
 		checkErr(rows.Scan(&c.ID, &c.EntryID, &c.UserID, &c.Comment, &c.CreatedAt))
-		if !isFriend(w, r, c.UserID) {
-			continue
-		}
 		row := db.QueryRow(`SELECT * FROM entries WHERE id = ?`, c.EntryID)
 		var id, userID, private int
 		var body string
@@ -378,9 +371,6 @@ LIMIT 10`, user.ID)
 			}
 		}
 		commentsOfFriends = append(commentsOfFriends, c)
-		if len(commentsOfFriends) >= 10 {
-			break
-		}
 	}
 	rows.Close()
 
