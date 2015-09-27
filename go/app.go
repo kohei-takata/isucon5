@@ -335,7 +335,7 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM entries ORDER BY created_at DESC LIMIT 1000`)
+	rows, err = db.Query(`SELECT * FROM entries ORDER BY created_at DESC LIMIT 10`)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -355,7 +355,7 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 1000`)
+	rows, err = db.Query(`SELECT * FROM comments ORDER BY created_at DESC LIMIT 10`)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
