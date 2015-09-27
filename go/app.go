@@ -335,8 +335,40 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`select * from (SELECT * FROM entries ORDER BY created_at DESC limit 1000) as test inner join relations re1 on test.user_id = re1.one inner join relations 
-re2 on test.user_id = re2.another limit 10;`)
+	rows, err = db.Query(`SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC`, user.ID, user.ID)
+	if err != sql.ErrNoRows {
+		checkErr(err)
+	}
+	var friendsIdSlice int[]
+	friendsMap := make(map[int]time.Time)
+	for rows.Next() {
+		var id, one, another int
+		var createdAt time.Time
+		checkErr(rows.Scan(&id, &one, &another, &createdAt))
+		var friendID int
+		if one == user.ID {
+			friendID = another
+		} else {
+			friendID = one
+		}
+
+		if _, ok := friendsMap[friendID]; !ok {
+			friendsMap[friendID] = createdAt
+		}
+	}
+	friends := make([]Friend, 0, len(friendsMap))
+	for key, val := range friendsMap {
+		friends = append(friends, Friend{key, val})
+		friendsIdSlice = append(key)
+	}
+	rows.Close()
+
+	var friendIds string
+	for key,friendId := range friendsIdSlice {
+		friendIds = friendIds + friendId
+	}
+
+	rows, err = db.Query(`SELECT * FROM entries where user_id in (?) ORDER BY created_at DESC limit 10`, friendIds)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -350,8 +382,7 @@ re2 on test.user_id = re2.another limit 10;`)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`select * from (SELECT * FROM comments ORDER BY created_at DESC limit 1000) as test inner join relations re1 on test.user_id = re1.one inner join relations 
-re2 on test.user_id = re2.another limit 10;`)
+	rows, err = db.Query(`SELECT * FROM comments where user_id in (?) ORDER BY created_at DESC limit 10`, friendIds)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -371,31 +402,6 @@ re2 on test.user_id = re2.another limit 10;`)
 			}
 		}
 		commentsOfFriends = append(commentsOfFriends, c)
-	}
-	rows.Close()
-
-	rows, err = db.Query(`SELECT * FROM relations WHERE one = ? OR another = ? ORDER BY created_at DESC`, user.ID, user.ID)
-	if err != sql.ErrNoRows {
-		checkErr(err)
-	}
-	friendsMap := make(map[int]time.Time)
-	for rows.Next() {
-		var id, one, another int
-		var createdAt time.Time
-		checkErr(rows.Scan(&id, &one, &another, &createdAt))
-		var friendID int
-		if one == user.ID {
-			friendID = another
-		} else {
-			friendID = one
-		}
-		if _, ok := friendsMap[friendID]; !ok {
-			friendsMap[friendID] = createdAt
-		}
-	}
-	friends := make([]Friend, 0, len(friendsMap))
-	for key, val := range friendsMap {
-		friends = append(friends, Friend{key, val})
 	}
 	rows.Close()
 
