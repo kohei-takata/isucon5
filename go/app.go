@@ -339,7 +339,7 @@ LIMIT 10`, user.ID)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
-	var friendsIdSlice []int
+	var friendsIdSlice string
 	friendsMap := make(map[int]time.Time)
 	for rows.Next() {
 		var id, one, another int
@@ -359,16 +359,13 @@ LIMIT 10`, user.ID)
 	friends := make([]Friend, 0, len(friendsMap))
 	for key, val := range friendsMap {
 		friends = append(friends, Friend{key, val})
-		friendsIdSlice = append(friendsIdSlice, key)
+		friendsIdSlice = friendsIdSlice + strconv.Itoa(key) + ","
 	}
 	rows.Close()
 
-	var friendIds string
-	for _,friendId := range friendsIdSlice {
-		friendIds = friendIds + strconv.Itoa(friendId)
-	}
+        friendsIdSlice = string(friendsIdSlice[:(len(friendsIdSlice) - 1)])
 
-	rows, err = db.Query(`SELECT * FROM entries where user_id in (?) ORDER BY created_at DESC limit 10`, friendIds)
+	rows, err = db.Query(`SELECT * FROM entries where user_id in (` + friendsIdSlice + `) ORDER BY created_at DESC limit 10`)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
@@ -382,7 +379,7 @@ LIMIT 10`, user.ID)
 	}
 	rows.Close()
 
-	rows, err = db.Query(`SELECT * FROM comments where user_id in (?) ORDER BY created_at DESC limit 10`, friendIds)
+	rows, err = db.Query(`SELECT * FROM comments where user_id in (` + friendsIdSlice + `) ORDER BY created_at DESC limit 10`)
 	if err != sql.ErrNoRows {
 		checkErr(err)
 	}
